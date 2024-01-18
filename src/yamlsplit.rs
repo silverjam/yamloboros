@@ -134,16 +134,10 @@ fn main() -> Result<()> {
        the input file is named "foo.yaml", the output file will be named
        "foo-1.yaml".
     */
-    // println!("1");
     let (input_file, basename, extension) = stdin_or_input_file()?;
-    // println!("2");
-    // let mut input = io::BufReader::new(input_file);
     let input = io::BufReader::new(input_file);
-    // println!("3");
     let mut output_file_count = 0;
-    // println!("4");
     let mut output_file = None;
-    // let buf: &mut String = &mut String::new();
     for line in input.lines() {
         let line = line.unwrap();
         if regex_doc_start().is_match(&line) {
@@ -168,7 +162,12 @@ fn main() -> Result<()> {
             output_line_to_file(&line, &mut output_file)?;
         }
     }
-    /*
-     */
+    if !std::env::var("YAMLSPLIT_REMOVE_SOURCE")
+        .unwrap_or_default()
+        .is_empty()
+    {
+        // Remove the source file.
+        std::fs::remove_file(format!("{}.{}", basename, extension))?;
+    }
     Ok(())
 }
