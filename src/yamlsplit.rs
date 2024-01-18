@@ -13,7 +13,7 @@
 
 use std::boxed::Box;
 use std::error::Error;
-use std::io::{self, BufRead, Write, BufReader, Read};
+use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
@@ -42,7 +42,11 @@ fn stdin_or_input_file() -> Result<(Box<dyn io::Read>, String, String)> {
         "-" => Box::new(io::stdin()) as Box<dyn io::Read>,
         _ => Box::new(std::fs::File::open(&input_filename)?) as Box<dyn io::Read>,
     };
-    let input_filename = if input_filename == "-" { "stdin.yaml".to_string() } else { input_filename };
+    let input_filename = if input_filename == "-" {
+        "stdin.yaml".to_string()
+    } else {
+        input_filename
+    };
     let (basename, extension) = basename(PathBuf::from(input_filename));
     Ok((input_file, basename, extension))
 }
@@ -53,8 +57,12 @@ fn stdin_or_input_file() -> Result<(Box<dyn io::Read>, String, String)> {
 fn basename(filename: PathBuf) -> (String, String) {
     let dirname = filename.parent().unwrap().to_str().unwrap();
     let extension = filename.extension();
-    let extension= extension.unwrap_or_default().to_str().unwrap().to_string();
-    let dirname = if dirname == "" { "".to_string() } else { dirname.to_string() + "/" };
+    let extension = extension.unwrap_or_default().to_str().unwrap().to_string();
+    let dirname = if dirname == "" {
+        "".to_string()
+    } else {
+        dirname.to_string() + "/"
+    };
     let filename = filename.file_name().unwrap().to_str().unwrap();
     // Get everything before the last ".".
     let split = filename.rsplit_once(".");
@@ -67,14 +75,32 @@ fn basename(filename: PathBuf) -> (String, String) {
 
 #[test]
 fn test_basename() {
-    assert_eq!(basename(PathBuf::from("foo")), ("foo".to_string(), "".to_string()));
-    assert_eq!(basename(PathBuf::from("foo.yaml")), ("foo".to_string(),  "yaml".to_string()));
-    assert_eq!(basename(PathBuf::from("foo.bar.yaml")), ("foo.bar".to_string(), "yaml".to_string()));
-    assert_eq!(basename(PathBuf::from("foo.bar.baz.yaml")), ("foo.bar.baz".to_string(), "yaml".to_string()));
-    assert_eq!(basename(PathBuf::from("dir/foo.bar.baz.yaml")), ("dir/foo.bar.baz".to_string(), "yaml".to_string()));
+    assert_eq!(
+        basename(PathBuf::from("foo")),
+        ("foo".to_string(), "".to_string())
+    );
+    assert_eq!(
+        basename(PathBuf::from("foo.yaml")),
+        ("foo".to_string(), "yaml".to_string())
+    );
+    assert_eq!(
+        basename(PathBuf::from("foo.bar.yaml")),
+        ("foo.bar".to_string(), "yaml".to_string())
+    );
+    assert_eq!(
+        basename(PathBuf::from("foo.bar.baz.yaml")),
+        ("foo.bar.baz".to_string(), "yaml".to_string())
+    );
+    assert_eq!(
+        basename(PathBuf::from("dir/foo.bar.baz.yaml")),
+        ("dir/foo.bar.baz".to_string(), "yaml".to_string())
+    );
 }
 
-fn output_line_to_file(line: &str, output_file: &mut Option<io::BufWriter<std::fs::File>>) -> Result<()> {
+fn output_line_to_file(
+    line: &str,
+    output_file: &mut Option<io::BufWriter<std::fs::File>>,
+) -> Result<()> {
     if let Some(output_file) = output_file {
         output_file.write_all(line.as_bytes())?;
         output_file.write_all(b"\n")?;
@@ -82,7 +108,11 @@ fn output_line_to_file(line: &str, output_file: &mut Option<io::BufWriter<std::f
     Ok(())
 }
 
-fn open_new_file_for_output(basename: &str, extension: &str, output_file_count: &mut u32) -> Result<io::BufWriter<std::fs::File>> {
+fn open_new_file_for_output(
+    basename: &str,
+    extension: &str,
+    output_file_count: &mut u32,
+) -> Result<io::BufWriter<std::fs::File>> {
     let output_filename = format!("{}-{}.{}", basename, output_file_count, extension);
     let output_file = std::fs::File::create(output_filename)?;
     *output_file_count += 1;
@@ -91,19 +121,19 @@ fn open_new_file_for_output(basename: &str, extension: &str, output_file_count: 
 
 fn main() -> Result<()> {
     /*
-        Open a file from the command line and splits the YAML documents into
-        separate files based on the appearance of the YAML document separator
-        "---".
-        
-        Each file will be named after the basename of the input file with a
-        numeric suffix.  For example, if the input file is named "foo.yaml", the
-        output files will be named "foo-1.yaml".
-        
-        For the first document, the "---" separator is optional.  If it is
-        omitted, the first document number will default to "1". For example, if
-        the input file is named "foo.yaml", the output file will be named
-        "foo-1.yaml".
-     */
+       Open a file from the command line and splits the YAML documents into
+       separate files based on the appearance of the YAML document separator
+       "---".
+
+       Each file will be named after the basename of the input file with a
+       numeric suffix.  For example, if the input file is named "foo.yaml", the
+       output files will be named "foo-1.yaml".
+
+       For the first document, the "---" separator is optional.  If it is
+       omitted, the first document number will default to "1". For example, if
+       the input file is named "foo.yaml", the output file will be named
+       "foo-1.yaml".
+    */
     // println!("1");
     let (input_file, basename, extension) = stdin_or_input_file()?;
     // println!("2");
@@ -118,20 +148,27 @@ fn main() -> Result<()> {
         let line = line.unwrap();
         if regex_doc_start().is_match(&line) {
             // Start of a new document, open a new output file.
-            output_file = Some(open_new_file_for_output(&basename, &extension, &mut output_file_count)?);
+            output_file = Some(open_new_file_for_output(
+                &basename,
+                &extension,
+                &mut output_file_count,
+            )?);
         } else if regex_doc_end().is_match(&line) {
             // End of a document, close the current output file.
             output_file = None;
         } else {
             // Write the line to the output file.
             if output_file.is_none() {
-                output_file = Some(open_new_file_for_output(&basename, &extension, &mut output_file_count)?);
+                output_file = Some(open_new_file_for_output(
+                    &basename,
+                    &extension,
+                    &mut output_file_count,
+                )?);
             }
             output_line_to_file(&line, &mut output_file)?;
         }
-    };
+    }
     /*
-    */
+     */
     Ok(())
 }
-
