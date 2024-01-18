@@ -58,14 +58,14 @@ fn basename(filename: PathBuf) -> (String, String) {
     let dirname = filename.parent().unwrap().to_str().unwrap();
     let extension = filename.extension();
     let extension = extension.unwrap_or_default().to_str().unwrap().to_string();
-    let dirname = if dirname == "" {
+    let dirname = if dirname.is_empty() {
         "".to_string()
     } else {
         dirname.to_string() + "/"
     };
     let filename = filename.file_name().unwrap().to_str().unwrap();
     // Get everything before the last ".".
-    let split = filename.rsplit_once(".");
+    let split = filename.rsplit_once('.');
     if let Some((basename, _)) = split {
         (dirname + basename, extension)
     } else {
