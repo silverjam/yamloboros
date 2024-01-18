@@ -10,6 +10,8 @@ publish = false
 [dependencies]
 serde_yaml = "*"
 serde_json = "*"
+regex = "*"
+anyhow = { version = "*", features = ["backtrace"] }
 
 [[bin]]
 name = "yaml2json"
@@ -18,3 +20,7 @@ path = "src/yaml2json.rs"
 [[bin]]
 name = "json2yaml"
 path = "src/json2yaml.rs"
+
+[[bin]]
+name = "yamlsplit"
+path = "src/yamlsplit.rs"
